@@ -10,12 +10,10 @@ env = environ.Env(
 
 environ.Env.read_env(BASE_DIR / '.env')
 
-
 SECRET_KEY = env('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env('DEBUG')
-
 
 ALLOWED_HOSTS = []
 
@@ -32,6 +30,7 @@ DJANGO_APPS = [
 
 THIRD_PARTY_APPS = [
     'rest_framework',
+    'drf_spectacular',
 ]
 
 LOCAL_APPS = [
@@ -118,3 +117,6 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+from config.apps_config.drf import *
+from config.apps_config.drf_spectacular import *
