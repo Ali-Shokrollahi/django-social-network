@@ -1,8 +1,10 @@
 from django.urls import path, include
 
-v1 = [
-]
+
+# v1 = [
+#
+# ]
 
 urlpatterns = [
-    path("v1/", include(v1))
+    path("accounts/", include("apps.accounts.urls")),
 ]
