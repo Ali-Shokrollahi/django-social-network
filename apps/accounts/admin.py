@@ -10,7 +10,6 @@ class CustomUserAdmin(UserAdmin):
     list_filter = ("is_admin", "is_active", "created_at")
     fieldsets = (
         ("Auth", {"fields": ("email", "password")}),
-        ("Dates", {"fields": ("created_at", "updated_at", "last_login")}),
         ("Permissions", {"fields": ("is_admin", "is_verified", "is_active", "groups", "user_permissions")}),
     )
     add_fieldsets = (

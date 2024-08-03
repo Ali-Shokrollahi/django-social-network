@@ -19,3 +19,10 @@ class RegistrationService:
     @staticmethod
     def _create_profile(*, user: User, username: str) -> None:
         Profile.objects.create(user=user, username=username)
+
+    # @staticmethod
+    # def _send_confirmation_email(*, user: User) -> None:
+    #     subject = 'Confirm your email'
+    #     from_email = '<EMAIL>'
+    #     recipient_list = [user.email]
+
