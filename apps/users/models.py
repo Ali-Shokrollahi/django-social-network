@@ -1,6 +1,6 @@
 from django.db import models
 from django.conf import settings
-from apps.utils.models.timestamp import UpdatedAtModel
+from apps.utils.models.timestamp import UpdatedAtModel, CreatedAtModel
 
 
 class Profile(UpdatedAtModel):
@@ -15,3 +15,11 @@ class Profile(UpdatedAtModel):
 
     def __str__(self):
         return self.username
+
+
+class Follow(CreatedAtModel):
+    follower = models.ForeignKey(Profile, related_name='followed_by', on_delete=models.CASCADE)
+    following = models.ForeignKey(Profile, related_name='follows', on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = ('follower', 'following')
