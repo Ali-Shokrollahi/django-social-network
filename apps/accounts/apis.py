@@ -1,16 +1,15 @@
 from django.contrib.auth import get_user_model
-from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema
 from rest_framework import serializers
-from rest_framework.views import APIView
-from rest_framework.validators import UniqueValidator
-from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.validators import UniqueValidator
+from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
 
 from apps.users.models import Profile
+from .services.registration import RegistrationService
 from .validators import number_validator, letter_validator, special_char_validator
-from .services.registration import RegistrationService, EmailConfirmationToken
 
 User = get_user_model()
 
@@ -28,7 +27,7 @@ class RegistrationAPIView(APIView):
             password = attrs.get('password')
             confirm_password = attrs.get('confirm_password')
             if password != confirm_password:
-                raise serializers.ValidationError('Passwords must match')
+                raise serializers.ValidationError(code='password_must_match', detail='Passwords must match')
 
             return attrs
 
