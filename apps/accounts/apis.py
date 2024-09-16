@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from drf_spectacular.utils import extend_schema
 from rest_framework import serializers
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.validators import UniqueValidator
 from rest_framework.views import APIView
@@ -62,3 +63,16 @@ class EmailConfirmView(APIView):
         except TokenError as e:
             return Response({'data': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         return Response({'detail': 'Email confirmed successfully'}, status=status.HTTP_200_OK)
+
+
+class MyAccountView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    class MyAccountOutputSerializer(serializers.ModelSerializer):
+        class Meta:
+            model = User
+            fields = ('email', 'created_at')
+
+    def get(self, request):
+        user = request.user
+        return Response(self.MyAccountOutputSerializer(user).data, status=status.HTTP_200_OK)

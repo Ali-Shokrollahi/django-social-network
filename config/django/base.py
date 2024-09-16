@@ -134,4 +134,3 @@ EMAIL_HOST_PASSWORD = ''
 EMAIL_USE_TLS = False
 FROM_EMAIL = 'ali.shokrollahi.me@gmail.com'
 
-
