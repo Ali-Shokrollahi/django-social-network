@@ -12,3 +12,9 @@ class ProfileService:
         profile.full_clean()
         profile.save()
         return profile
+
+    @staticmethod
+    def update_username(profile: Profile, username: str) -> None:
+        profile.username = username
+        profile.full_clean()
+        profile.save()
