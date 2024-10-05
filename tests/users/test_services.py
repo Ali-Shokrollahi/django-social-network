@@ -16,3 +16,9 @@ def test_update_profile(profile):
     assert updated_profile.first_name == profile.first_name
     assert updated_profile.last_name == profile.last_name
     assert updated_profile.bio == profile.bio
+
+
+def test_update_username(profile):
+    ProfileService.update_username(profile, "new username")
+    profile.refresh_from_db()
+    assert profile.username == "new username"

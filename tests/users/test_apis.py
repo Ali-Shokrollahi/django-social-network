@@ -3,7 +3,6 @@ from django.urls import reverse
 from rest_framework import status
 
 
-@pytest.mark.django_db
 def test_get_profile_success(api_client, profile, user):
     api_client.force_authenticate(user=user)
 
@@ -18,7 +17,6 @@ def test_get_profile_success(api_client, profile, user):
     assert response.data['bio'] == profile.bio
 
 
-@pytest.mark.django_db
 def test_get_profile_not_found(api_client, user):
     api_client.force_authenticate(user=user)
 
@@ -28,19 +26,17 @@ def test_get_profile_not_found(api_client, user):
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-@pytest.mark.django_db
-def test_get_profile_not_forbidden(api_client, profile):
+def test_get_profile_unauthorized(api_client, profile):
     url = reverse('profile_detail', kwargs={'username': profile.username})
     response = api_client.get(url)
 
-    assert response.status_code == status.HTTP_403_FORBIDDEN
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
-@pytest.mark.django_db
 def test_put_profile_success(api_client, profile, user):
     api_client.force_authenticate(user=user)
 
-    url = reverse('profile_detail', kwargs={'username': profile.username})
+    url = reverse('profile_update')
     data = {'first_name': 'new firstname', 'last_name': 'new lastname', 'bio': 'new bio'}
     response = api_client.put(url, data=data)
 
@@ -50,12 +46,9 @@ def test_put_profile_success(api_client, profile, user):
     assert response.data['bio'] == 'new bio'
 
 
-@pytest.mark.django_db
-def test_put_profile_permission_denied(api_client, another_profile, user):
+def test_patch_username_success(api_client, profile, user):
     api_client.force_authenticate(user=user)
-
-    url = reverse('profile_detail', kwargs={'username': another_profile.username})
-    data = {'first_name': 'unauthorized', 'bio': 'unauthorized bio'}
-    response = api_client.put(url, data=data)
-
-    assert response.status_code == status.HTTP_403_FORBIDDEN
+    url = reverse('username_update')
+    response = api_client.patch(url, {'username': 'new username'})
+    assert response.status_code == status.HTTP_200_OK
+    assert response.data == 'username updated successfully'

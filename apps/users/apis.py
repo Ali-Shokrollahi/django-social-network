@@ -74,4 +74,4 @@ class UsernameUpdateApi(APIView):
         serializer.is_valid(raise_exception=True)
         service = ProfileService()
         service.update_username(profile=profile, username=serializer.validated_data['username'])
-        return Response(data="Username updated successfully", status=status.HTTP_200_OK)
+        return Response(data="username updated successfully", status=status.HTTP_200_OK)
