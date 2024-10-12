@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.conf import settings
 from apps.utils.models.timestamp import UpdatedAtModel, CreatedAtModel
@@ -23,3 +24,10 @@ class Follow(CreatedAtModel):
 
     class Meta:
         unique_together = ('follower', 'following')
+
+    def clean(self):
+        if self.follower == self.following:
+            raise ValidationError({"following": "follower cannot be equal to following"})
+
+    def __str__(self):
+        return f"{self.follower.username}- {self.following.username}"

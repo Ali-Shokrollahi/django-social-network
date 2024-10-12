@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from drf_spectacular.utils import extend_schema
 from rest_framework import serializers, status
 from rest_framework.permissions import IsAuthenticated
@@ -5,10 +6,12 @@ from rest_framework.response import Response
 from rest_framework.validators import UniqueValidator
 from rest_framework.views import APIView
 
-from .models import Profile
+from .models import Profile, Follow
 from .permissions import IsOwnerOrAuthenticatedReadOnly
 from .selectors.profiles import ProfileSelector
+from .selectors.subscription import SubscriptionSelector
 from .services.profile import ProfileService
+from .services.subscription import SubscriptionService
 
 
 class ProfileDetailApi(APIView):
@@ -75,3 +78,47 @@ class UsernameUpdateApi(APIView):
         service = ProfileService()
         service.update_username(profile=profile, username=serializer.validated_data['username'])
         return Response(data="username updated successfully", status=status.HTTP_200_OK)
+
+
+class SubscriptionCreateApi(APIView):
+    permission_classes = [IsAuthenticated]
+
+    class SubscriptionInputSerializer(serializers.Serializer):
+        username = serializers.CharField(max_length=32)
+
+    @staticmethod
+    def _get_object(username: str) -> Profile:
+        selector = ProfileSelector(username=username)
+        return selector.get_profile()
+
+    def post(self, request, username: str):
+        serializer = self.SubscriptionInputSerializer(data={"username": username})
+        serializer.is_valid(raise_exception=True)
+        follower = request.user.profile
+        following = self._get_object(username=serializer.validated_data['username'])
+        try:
+            SubscriptionService().follow(follower=follower, following=following)
+        except ValidationError as e:
+            return Response(e.messages, status=status.HTTP_400_BAD_REQUEST)
+        return Response("followed successfully", status=status.HTTP_201_CREATED)
+
+
+class SubscriptionDeleteApi(APIView):
+    permission_classes = [IsAuthenticated]
+
+    class SubscriptionDeleteInputSerializer(serializers.Serializer):
+        username = serializers.CharField(max_length=32)
+
+    @staticmethod
+    def _get_object(follower: Profile, following_username: str) -> Follow:
+        following = ProfileSelector(username=following_username).get_profile()
+        subscription = SubscriptionSelector.get_subscription(follower=follower, following=following)
+        return subscription
+
+    def delete(self, request, username: str):
+        serializer = self.SubscriptionDeleteInputSerializer(data={"username": username})
+        serializer.is_valid(raise_exception=True)
+        follower = request.user.profile
+        subscription = self._get_object(follower, following_username=serializer.validated_data['username'])
+        SubscriptionService().unfollow(subscription=subscription)
+        return Response(status=status.HTTP_204_NO_CONTENT)
