@@ -12,6 +12,7 @@ class SubscriptionService:
         following.follower_count += 1
         follower.save()
         following.save()
+        return follow
 
     def unfollow(self, *, subscription: Follow):
         subscription.delete()

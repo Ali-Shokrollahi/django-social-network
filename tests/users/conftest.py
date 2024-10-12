@@ -1,7 +1,8 @@
 import pytest
 from rest_framework.test import APIClient
 
-from apps.users.models import Profile
+from apps.users.models import Profile, Follow
+from apps.users.services.subscription import SubscriptionService
 
 
 @pytest.fixture
@@ -44,3 +45,8 @@ def another_profile(another_user):
     return Profile.objects.create(user=another_user, username="other_user", first_name="other first_name",
                                   last_name="other last_name",
                                   bio="other bio")
+
+
+@pytest.fixture
+def follow_relationship(profile, another_profile):
+    return SubscriptionService().follow(follower=profile, following=another_profile)
