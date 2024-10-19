@@ -122,3 +122,47 @@ class SubscriptionDeleteApi(APIView):
         subscription = self._get_object(follower, following_username=serializer.validated_data['username'])
         SubscriptionService().unfollow(subscription=subscription)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class FollowingGetApi(APIView):
+    permission_classes = [IsAuthenticated]
+
+    class FollowingGetInputSerializer(serializers.Serializer):
+        username = serializers.CharField(max_length=32)
+
+    class FollowingGetOutputSerializer(serializers.ModelSerializer):
+        class Meta:
+            model = Profile
+            fields = ["username", "first_name", "last_name"]
+
+    @staticmethod
+    def _get_object(username: str):
+        return ProfileSelector(username=username).get_profile_following()
+
+    def get(self, request, username: str):
+        serializer = self.FollowingGetInputSerializer(data={"username": username})
+        serializer.is_valid(raise_exception=True)
+        followings = self._get_object(username=serializer.validated_data['username'])
+        return Response(self.FollowingGetOutputSerializer(followings, many=True).data, status=status.HTTP_200_OK)
+
+
+class FollowerGetApi(APIView):
+    permission_classes = [IsAuthenticated]
+
+    class FollowerGetInputSerializer(serializers.Serializer):
+        username = serializers.CharField(max_length=32)
+
+    class FollowerGetOutputSerializer(serializers.ModelSerializer):
+        class Meta:
+            model = Profile
+            fields = ["username", "first_name", "last_name"]
+
+    @staticmethod
+    def _get_object(username: str):
+        return ProfileSelector(username=username).get_profile_followers()
+
+    def get(self, request, username: str):
+        serializer = self.FollowerGetInputSerializer(data={"username": username})
+        serializer.is_valid(raise_exception=True)
+        followings = self._get_object(username=serializer.validated_data['username'])
+        return Response(self.FollowerGetOutputSerializer(followings, many=True).data, status=status.HTTP_200_OK)
