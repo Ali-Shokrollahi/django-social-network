@@ -37,3 +37,17 @@ def test_get_subscription_success(profile, another_profile, follow_relationship)
 def test_get_subscription_not_found(profile, another_profile):
     with pytest.raises(Http404):
         SubscriptionSelector.get_subscription(follower=profile, following=another_profile)
+
+
+def test_get_profile_followers_success(follow_relationship):
+    profile_username = follow_relationship.following.username
+    followers = ProfileSelector(username=profile_username).get_profile_followers()
+    assert followers.count() == 1
+    assert follow_relationship.follower in followers
+
+
+def test_get_profile_followings_success(follow_relationship):
+    profile_username = follow_relationship.follower.username
+    followings = ProfileSelector(username=profile_username).get_profile_following()
+    assert followings.count() == 1
+    assert follow_relationship.following in followings
