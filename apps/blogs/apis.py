@@ -1,17 +1,23 @@
 from django.db import IntegrityError
+from django.urls import reverse
 from drf_spectacular.utils import extend_schema
 from rest_framework import serializers, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.api.pagination import LimitOffsetPagination, get_paginated_response_context
 from apps.blogs.models import Post
-from apps.blogs.selectors.posts import get_posts_list
+from apps.blogs.selectors.posts import get_posts_list, get_post_detail
 from apps.blogs.services.post import create_post
+from apps.users.selectors.profiles import ProfileSelector
 
 
 class PostApi(APIView):
     permission_classes = [IsAuthenticated]
+
+    class Pagination(LimitOffsetPagination):
+        default_limit = 3
 
     class FilterSerializer(serializers.Serializer):
         search = serializers.CharField(required=False, max_length=100)
@@ -23,9 +29,26 @@ class PostApi(APIView):
         content = serializers.CharField(max_length=512)
 
     class PostOutputSerializer(serializers.ModelSerializer):
+        url = serializers.SerializerMethodField("_get_post_url")
+        owner = serializers.SerializerMethodField("_get_post_owner")
+        summary = serializers.SerializerMethodField("_get_post_summary")
+
         class Meta:
             model = Post
-            fields = ["id", "title", "content", "owner", "created_at", "updated_at"]
+            fields = ["id", "title", "summary", "owner", "updated_at", "url"]
+
+        def _get_post_url(self, post):
+            request = self.context.get("request")
+            path = reverse("post_detail", args=(post.owner.username, post.slug,))
+            return request.build_absolute_uri(path)
+
+        @staticmethod
+        def _get_post_owner(post):
+            return post.owner.username
+
+        @staticmethod
+        def _get_post_summary(post):
+            return post.content[:50]
 
     @extend_schema(request=PostInputSerializer, responses=PostOutputSerializer)
     def post(self, request):
@@ -46,4 +69,36 @@ class PostApi(APIView):
         filters_serializer = self.FilterSerializer(data=request.query_params)
         filters_serializer.is_valid(raise_exception=True)
         posts = get_posts_list(filters=filters_serializer.validated_data)
-        return Response(self.PostOutputSerializer(posts, many=True).data, status=status.HTTP_200_OK)
+        return get_paginated_response_context(
+            pagination_class=self.Pagination,
+            serializer_class=self.PostOutputSerializer,
+            queryset=posts,
+            request=request,
+            view=self,
+        )
+
+
+class PostDetailApi(APIView):
+    permission_classes = [IsAuthenticated]
+
+    class PostDetailOutputSerializer(serializers.ModelSerializer):
+        owner = serializers.SerializerMethodField("_get_post_owner")
+
+        class Meta:
+            model = Post
+            fields = ["id", "title", "content", "owner", "updated_at"]
+
+        @staticmethod
+        def _get_post_owner(post):
+            return post.owner.username
+
+    @staticmethod
+    def _get_object(username, slug):
+        profile = ProfileSelector(username=username).get_profile()
+        post = get_post_detail(slug=slug, profile=profile)
+        return post
+
+    @extend_schema(responses=PostDetailOutputSerializer)
+    def get(self, request, username, slug):
+        post = self._get_object(slug=slug, username=username)
+        return Response(self.PostDetailOutputSerializer(post).data, status=status.HTTP_200_OK)
