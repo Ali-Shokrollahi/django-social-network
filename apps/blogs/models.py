@@ -1,5 +1,4 @@
 from django.db import models
-from django.urls import reverse
 
 from apps.users.models import Profile
 from apps.utils.models.timestamp import TimeStampModel

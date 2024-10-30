@@ -8,7 +8,7 @@ from rest_framework.views import APIView
 
 from apps.api.pagination import LimitOffsetPagination, get_paginated_response_context
 from apps.blogs.models import Post
-from apps.blogs.selectors.posts import get_posts_list, get_post_detail
+from apps.blogs.selectors.posts import get_posts_list, get_post_detail, get_subscription_posts_list
 from apps.blogs.services.post import create_post
 from apps.users.selectors.profiles import ProfileSelector
 
@@ -48,7 +48,7 @@ class PostApi(APIView):
 
         @staticmethod
         def _get_post_summary(post):
-            return post.content[:50]
+            return post.content[:47] + "..."
 
     @extend_schema(request=PostInputSerializer, responses=PostOutputSerializer)
     def post(self, request):
@@ -62,7 +62,8 @@ class PostApi(APIView):
         except IntegrityError as e:
             return Response(data="There is a post with this owner and title", status=status.HTTP_400_BAD_REQUEST)
 
-        return Response(self.PostOutputSerializer(post).data, status=status.HTTP_201_CREATED)
+        return Response(self.PostOutputSerializer(post, context={"request": request}).data,
+                        status=status.HTTP_201_CREATED)
 
     @extend_schema(parameters=[FilterSerializer], responses=PostOutputSerializer)
     def get(self, request):
@@ -102,3 +103,47 @@ class PostDetailApi(APIView):
     def get(self, request, username, slug):
         post = self._get_object(slug=slug, username=username)
         return Response(self.PostDetailOutputSerializer(post).data, status=status.HTTP_200_OK)
+
+
+class FeedApi(APIView):
+    permission_classes = [IsAuthenticated]
+
+    class Pagination(LimitOffsetPagination):
+        default_limit = 3
+
+    class FeedOutputSerializer(serializers.ModelSerializer):
+        url = serializers.SerializerMethodField("_get_post_url")
+        owner = serializers.SerializerMethodField("_get_post_owner")
+        summary = serializers.SerializerMethodField("_get_post_summary")
+
+        class Meta:
+            model = Post
+            fields = ["id", "title", "summary", "owner", "updated_at", "url"]
+
+        def _get_post_url(self, post):
+            request = self.context.get("request")
+            path = reverse("post_detail", args=(post.owner.username, post.slug,))
+            return request.build_absolute_uri(path)
+
+        @staticmethod
+        def _get_post_owner(post):
+            return post.owner.username
+
+        @staticmethod
+        def _get_post_summary(post):
+            return post.content[:47] + "..."
+
+    @staticmethod
+    def _get_profile_subscriptions(request):
+        subscriptions = ProfileSelector(username=request.user.profile.username).get_profile_following()
+        return subscriptions
+
+    def get(self, request):
+        posts = get_subscription_posts_list(subscriptions=self._get_profile_subscriptions(request))
+        return get_paginated_response_context(
+            pagination_class=self.Pagination,
+            serializer_class=self.FeedOutputSerializer,
+            queryset=posts,
+            request=request,
+            view=self,
+        )

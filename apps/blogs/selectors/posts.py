@@ -14,3 +14,8 @@ def get_posts_list(*, filters: dict = None) -> QuerySet[Post]:
 
 def get_post_detail(*, slug: str, profile: Profile) -> Post:
     return get_object_or_404(profile.posts, slug=slug)
+
+
+def get_subscription_posts_list(*, subscriptions: QuerySet[Profile]) -> QuerySet[Post]:
+    posts = Post.objects.filter(owner__in=subscriptions).order_by("-updated_at")
+    return posts
