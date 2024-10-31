@@ -7,7 +7,7 @@ from rest_framework.validators import UniqueValidator
 from rest_framework.views import APIView
 
 from .models import Profile, Follow
-from .permissions import IsOwnerOrAuthenticatedReadOnly
+from apps.utils.permissions import IsOwnerOrAuthenticatedReadOnly
 from .selectors.profiles import ProfileSelector
 from .selectors.subscription import SubscriptionSelector
 from .services.profile import ProfileService
@@ -15,7 +15,7 @@ from .services.subscription import SubscriptionService
 
 
 class ProfileDetailApi(APIView):
-    permission_classes = [IsAuthenticated, IsOwnerOrAuthenticatedReadOnly]
+    permission_classes = [IsAuthenticated]
 
     class ProfileOutputSerializer(serializers.ModelSerializer):
         class Meta:
@@ -54,7 +54,6 @@ class ProfileUpdateApi(APIView):
     @extend_schema(request=ProfileInputSerializer, responses=ProfileOutputSerializer)
     def put(self, request):
         profile = request.user.profile
-        self.check_object_permissions(request, profile)
         serializer = self.ProfileInputSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         service = ProfileService()

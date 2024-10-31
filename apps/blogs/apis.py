@@ -9,7 +9,7 @@ from rest_framework.views import APIView
 from apps.api.pagination import LimitOffsetPagination, get_paginated_response_context
 from apps.blogs.models import Post
 from apps.blogs.selectors.posts import get_posts_list, get_post_detail, get_subscription_posts_list
-from apps.blogs.services.post import create_post
+from apps.blogs.services.post import create_post, update_post, delete_post
 from apps.users.selectors.profiles import ProfileSelector
 
 
@@ -59,7 +59,7 @@ class PostApi(APIView):
                                content=serializer.validated_data["content"],
                                owner=request.user.profile
                                )
-        except IntegrityError as e:
+        except IntegrityError:
             return Response(data="There is a post with this owner and title", status=status.HTTP_400_BAD_REQUEST)
 
         return Response(self.PostOutputSerializer(post, context={"request": request}).data,
@@ -104,6 +104,49 @@ class PostDetailApi(APIView):
         post = self._get_object(slug=slug, username=username)
         return Response(self.PostDetailOutputSerializer(post).data, status=status.HTTP_200_OK)
 
+
+class PostUpdateDeleteApi(APIView):
+    class PostUpdateInputSerializer(serializers.Serializer):
+        title = serializers.CharField(max_length=64, required=False)
+        content = serializers.CharField(max_length=512, required=False)
+
+    class PostUpdateOutputSerializer(serializers.ModelSerializer):
+        owner = serializers.SerializerMethodField("_get_post_owner")
+
+        class Meta:
+            model = Post
+            fields = ["id", "title", "content", "owner", "updated_at"]
+
+        @staticmethod
+        def _get_post_owner(post):
+            return post.owner.username
+
+    @staticmethod
+    def _get_object(username, slug):
+        profile = ProfileSelector(username=username).get_profile()
+        post = get_post_detail(slug=slug, profile=profile)
+        return post
+
+    @extend_schema(request=PostUpdateInputSerializer, responses=PostUpdateOutputSerializer)
+    def patch(self, request, slug):
+        serializer = self.PostUpdateInputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        post = self._get_object(slug=slug, username=request.user.profile.username)
+
+        try:
+            post = update_post(post=post,
+                               title=serializer.validated_data.get("title"),
+                               content=serializer.validated_data.get("content"),
+                               )
+        except IntegrityError:
+            return Response(data="There is a post with this owner and title", status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(self.PostUpdateOutputSerializer(post).data, status=status.HTTP_200_OK)
+
+    def delete(self, request, slug):
+        post = self._get_object(slug=slug, username=request.user.profile.username)
+        delete_post(post=post)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 class FeedApi(APIView):
     permission_classes = [IsAuthenticated]

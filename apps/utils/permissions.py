@@ -11,7 +11,7 @@ class IsOwnerOrAuthenticatedReadOnly(BasePermission):
         if request.method in SAFE_METHODS:
             return request.user.is_authenticated
 
-        return obj.user == request.user
+        return obj.owner == request.user.profile
 
 
 class IsOwner(BasePermission):

@@ -69,7 +69,6 @@ def test_subscription_create_user_not_found(api_client, profile):
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-@pytest.mark.django_db
 def test_subscription_delete_success(api_client, follow_relationship):
     api_client.force_authenticate(user=follow_relationship.follower.user)
     url = reverse('unfollow', kwargs={'username': follow_relationship.following.username})
