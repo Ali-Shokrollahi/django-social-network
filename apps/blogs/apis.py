@@ -9,7 +9,10 @@ from rest_framework.views import APIView
 from apps.api.pagination import LimitOffsetPagination, get_paginated_response_context
 from apps.blogs.models import Post
 from apps.blogs.selectors.posts import get_posts_list, get_post_detail, get_subscription_posts_list
+from apps.blogs.selectors.likes import get_post_likes
 from apps.blogs.services.post import create_post, update_post, delete_post
+from apps.blogs.services.likes import create_like, delete_like
+from apps.users.models import Profile
 from apps.users.selectors.profiles import ProfileSelector
 
 
@@ -148,6 +151,7 @@ class PostUpdateDeleteApi(APIView):
         delete_post(post=post)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+
 class FeedApi(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -190,3 +194,44 @@ class FeedApi(APIView):
             request=request,
             view=self,
         )
+
+
+class PostLikeGetApi(APIView):
+    permission_classes = [IsAuthenticated]
+
+    class PostLikeOutputSerializer(serializers.ModelSerializer):
+        class Meta:
+            model = Profile
+            fields = ["username", "first_name", "last_name"]
+
+    @staticmethod
+    def _get_object(username, slug):
+        profile = ProfileSelector(username=username).get_profile()
+        post = get_post_detail(slug=slug, profile=profile)
+        return post
+
+    def get(self, request, username, slug):
+        posts = get_post_likes(self._get_object(username=username, slug=slug))
+        return Response(self.PostLikeOutputSerializer(posts, many=True).data, status=status.HTTP_200_OK)
+
+
+class LikeCreateDeleteApi(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @staticmethod
+    def _get_object(username, slug):
+        profile = ProfileSelector(username=username).get_profile()
+        post = get_post_detail(slug=slug, profile=profile)
+        return post
+
+    def post(self, request, username, slug):
+        profile = request.user.profile
+        post = self._get_object(slug=slug, username=username)
+        create_like(post=post, profile=profile)
+        return Response(data="Post liked successfully.", status=status.HTTP_201_CREATED)
+
+    def delete(self, request, username, slug):
+        profile = request.user.profile
+        post = self._get_object(slug=slug, username=username)
+        delete_like(post=post, profile=profile)
+        return Response(status=status.HTTP_204_NO_CONTENT)
