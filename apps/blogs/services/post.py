@@ -1,11 +1,15 @@
+from django.db import transaction
 from django.utils.text import slugify
 
 from apps.users.models import Profile
 from apps.blogs.models import Post
 
 
+@transaction.atomic
 def create_post(*, title: str, content: str, owner: Profile) -> Post:
     post = Post.objects.create(slug=slugify(title), title=title, content=content, owner=owner)
+    owner.post_count += 1
+    owner.save()
     return post
 
 
@@ -20,5 +24,8 @@ def update_post(*, post: Post, title: str | None, content: str | None) -> Post:
     return post
 
 
+@transaction.atomic
 def delete_post(*, post: Post) -> None:
     post.delete()
+    post.owner.post_count -= 1
+    post.owner.save()
