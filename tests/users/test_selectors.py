@@ -6,7 +6,8 @@ from apps.users.selectors.subscription import SubscriptionSelector
 
 
 @pytest.mark.django_db
-def test_get_profile_success(profile):
+def test_get_profile_success(profile_factory):
+    profile = profile_factory()
     selector = ProfileSelector(username=profile.username)
 
     fetched_profile = selector.get_profile()
@@ -26,7 +27,11 @@ def test_get_profile_not_found():
         selector.get_profile()
 
 
-def test_get_subscription_success(profile, another_profile, follow_relationship):
+@pytest.mark.django_db
+def test_get_subscription_success(profile_factory, follow_factory):
+    profile = profile_factory()
+    another_profile = profile_factory()
+    follow_factory(follower=profile, following=another_profile)
     subscription = SubscriptionSelector.get_subscription(follower=profile, following=another_profile)
 
     assert subscription is not None
@@ -34,19 +39,30 @@ def test_get_subscription_success(profile, another_profile, follow_relationship)
     assert subscription.following == another_profile
 
 
-def test_get_subscription_not_found(profile, another_profile):
+@pytest.mark.django_db
+def test_get_subscription_not_found(profile_factory):
+    profile = profile_factory()
+    another_profile = profile_factory()
     with pytest.raises(Http404):
         SubscriptionSelector.get_subscription(follower=profile, following=another_profile)
 
 
-def test_get_profile_followers_success(follow_relationship):
+@pytest.mark.django_db
+def test_get_profile_followers_success(profile_factory, follow_factory):
+    profile = profile_factory()
+    another_profile = profile_factory()
+    follow_relationship = follow_factory(follower=profile, following=another_profile)
     profile_username = follow_relationship.following.username
     followers = ProfileSelector(username=profile_username).get_profile_followers()
     assert followers.count() == 1
     assert follow_relationship.follower in followers
 
 
-def test_get_profile_followings_success(follow_relationship):
+@pytest.mark.django_db
+def test_get_profile_followings_success(profile_factory, follow_factory):
+    profile = profile_factory()
+    another_profile = profile_factory()
+    follow_relationship = follow_factory(follower=profile, following=another_profile)
     profile_username = follow_relationship.follower.username
     followings = ProfileSelector(username=profile_username).get_profile_following()
     assert followings.count() == 1

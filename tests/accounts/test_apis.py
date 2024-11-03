@@ -61,16 +61,17 @@ def test_password_match(api_client):
 
 
 @pytest.mark.django_db
-def test_email_confirmation_success(api_client, user_data, user1):
-    token = EmailConfirmationToken.for_user(user1)
+def test_email_confirmation_success(api_client, user_data, user_factory):
+    user = user_factory()
+    token = EmailConfirmationToken.for_user(user)
     email_confirm_url = reverse('email_confirm', args=[str(token)])
 
     response = api_client.get(email_confirm_url)
 
     assert response.status_code == status.HTTP_200_OK
-    user1.refresh_from_db()
-    assert user1.is_active
-    assert user1.is_verified
+    user.refresh_from_db()
+    assert user.is_active
+    assert user.is_verified
 
 
 @pytest.mark.django_db

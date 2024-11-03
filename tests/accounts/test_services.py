@@ -10,7 +10,7 @@ from apps.users.models import Profile
 @pytest.mark.django_db
 @patch('apps.accounts.services.registration.EmailMessage.send')
 def test_register_user(mock_send_email, registration_service, user_data):
-    user, tokens = registration_service.register(**user_data)
+    user, tokens = registration_service().register(**user_data)
 
     # Assert the user was created
     assert user.email == user_data['email']
@@ -28,25 +28,27 @@ def test_register_user(mock_send_email, registration_service, user_data):
 
 
 @pytest.mark.django_db
-def test_activate_user(registration_service, user1):
-    token = EmailConfirmationToken.for_user(user1)
+def test_activate_user(registration_service, user_factory):
+    user = user_factory()
+    token = EmailConfirmationToken.for_user(user)
 
-    registration_service.activate_user(token=str(token))
+    registration_service().activate_user(token=str(token))
 
-    user1.refresh_from_db()
-    assert user1.is_active
-    assert user1.is_verified
+    user.refresh_from_db()
+    assert user.is_active
+    assert user.is_verified
 
 
 @pytest.mark.django_db
-def test_activate_user_already_activated(registration_service, user1):
-    user1.is_active = True
-    user1.is_verified = True
-    user1.save()
+def test_activate_user_already_activated(registration_service, user_factory):
+    user = user_factory()
+    user.is_active = True
+    user.is_verified = True
+    user.save()
 
-    token = EmailConfirmationToken.for_user(user1)
+    token = EmailConfirmationToken.for_user(user)
 
     with pytest.raises(UserAlreadyActivatedException) as exc_info:
-        registration_service.activate_user(token=str(token))
+        registration_service().activate_user(token=str(token))
 
     assert str(exc_info.value) == 'This account is already activated.'

@@ -1,7 +1,22 @@
 import pytest
 from rest_framework.test import APIClient
 
-from apps.users.models import Profile
+from .factories import UserFactory, ProfileFactory, FollowFactory
+
+
+@pytest.fixture
+def user_factory():
+    return UserFactory
+
+
+@pytest.fixture
+def profile_factory():
+    return ProfileFactory
+
+
+@pytest.fixture
+def follow_factory():
+    return FollowFactory
 
 
 @pytest.fixture
@@ -11,22 +26,8 @@ def api_client():
 
 
 @pytest.fixture
-def profile_data():
-    return {
-        "username": "test_user",
-        "first_name": "test firstname",
-        "last_name": "test lastname",
-        "bio": "test bio"
-    }
-
-
-@pytest.fixture
-def user(django_user_model):
-    """Fixture to create and return a user."""
-    return django_user_model.objects.create_user(email="testuser@email.com", password="Test@1pass")
-
-
-@pytest.fixture
-def profile(user, profile_data):
-    """Fixture to create and return a profile."""
-    return Profile.objects.create(user=user, **profile_data)
+def authenticated_client():
+    user = UserFactory()
+    client = APIClient()
+    client.force_authenticate(user)
+    return client
