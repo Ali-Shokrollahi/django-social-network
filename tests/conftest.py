@@ -1,7 +1,7 @@
 import pytest
 from rest_framework.test import APIClient
 
-from .factories import UserFactory, ProfileFactory, FollowFactory
+from .factories import UserFactory, ProfileFactory, FollowFactory, PostFactory, LikeFactory
 
 
 @pytest.fixture
@@ -17,6 +17,16 @@ def profile_factory():
 @pytest.fixture
 def follow_factory():
     return FollowFactory
+
+
+@pytest.fixture
+def post_factory():
+    return PostFactory
+
+
+@pytest.fixture
+def like_factory():
+    return LikeFactory
 
 
 @pytest.fixture

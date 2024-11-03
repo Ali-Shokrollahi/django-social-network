@@ -1,6 +1,6 @@
 from django.db.models import QuerySet
 
-from apps.blogs.models import Post, Like
+from apps.blogs.models import Post
 from apps.users.models import Profile
 
 

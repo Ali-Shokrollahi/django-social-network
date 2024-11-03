@@ -1,6 +1,8 @@
 import factory
 from django.contrib.auth import get_user_model
+from django.utils.text import slugify
 
+from apps.blogs.models import Post, Like
 from apps.users.models import Profile, Follow
 
 User = get_user_model()
@@ -55,3 +57,31 @@ class FollowFactory(factory.django.DjangoModelFactory):
             instance.following.follower_count += 1
             instance.follower.save()
             instance.following.save()
+
+
+class PostFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Post
+
+    title = factory.Faker("text", max_nb_chars=64)
+    content = factory.Faker("text", max_nb_chars=512)
+
+    owner = factory.SubFactory(ProfileFactory)
+
+    @factory.lazy_attribute
+    def slug(self):
+        return slugify(self.title)
+
+    @classmethod
+    def _after_postgeneration(cls, instance, create, results=None):
+        if create:
+            instance.owner.post_count += 1
+            instance.owner.save()
+
+
+class LikeFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Like
+
+    profile = factory.SubFactory(ProfileFactory)
+    post = factory.SubFactory(PostFactory)
