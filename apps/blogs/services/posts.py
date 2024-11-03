@@ -13,7 +13,7 @@ def create_post(*, title: str, content: str, owner: Profile) -> Post:
     return post
 
 
-def update_post(*, post: Post, title: str | None, content: str | None) -> Post:
+def update_post(*, post: Post, title: str | None = None, content: str | None = None) -> Post:
     if title is not None:
         post.title = title
         post.slug = slugify(title)

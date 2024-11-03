@@ -10,7 +10,7 @@ from apps.api.pagination import LimitOffsetPagination, get_paginated_response_co
 from apps.blogs.models import Post
 from apps.blogs.selectors.posts import get_posts_list, get_post_detail, get_subscription_posts_list
 from apps.blogs.selectors.likes import get_post_likes
-from apps.blogs.services.post import create_post, update_post, delete_post
+from apps.blogs.services.posts import create_post, update_post, delete_post
 from apps.blogs.services.likes import create_like, delete_like
 from apps.users.models import Profile
 from apps.users.selectors.profiles import ProfileSelector
@@ -138,8 +138,7 @@ class PostUpdateDeleteApi(APIView):
 
         try:
             post = update_post(post=post,
-                               title=serializer.validated_data.get("title"),
-                               content=serializer.validated_data.get("content"),
+                               **serializer.validated_data
                                )
         except IntegrityError:
             return Response(data="There is a post with this owner and title", status=status.HTTP_400_BAD_REQUEST)
